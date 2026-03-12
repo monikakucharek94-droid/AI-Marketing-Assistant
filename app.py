@@ -135,4 +135,4 @@ if product:
         st.write(campaign)
 
 st.markdown("---")
-st.caption("Built with Python, Streamlit, Pandas and Matplotlib.")
+st.caption("Built with Python, Streamlit, Pandas and Matplotlib.") Improve dashboard UI
