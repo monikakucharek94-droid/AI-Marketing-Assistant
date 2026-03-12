@@ -49,10 +49,18 @@ st.markdown("""
     border-radius: 12px;
     margin-bottom: 10px;
 }
+.roadmap-box {
+    background: #0b1220;
+    border-left: 4px solid #60a5fa;
+    padding: 14px 16px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
 </style>
 """, unsafe_allow_html=True)
 
-data = [
+# ---------- DEMO DATA ----------
+demo_data = [
     ["Customer Support Chatbot", 9, 4, 8, 5, 120000],
     ["Marketing Content Generator", 8, 3, 9, 4, 90000],
     ["Customer Review Analysis", 7, 3, 8, 3, 70000],
@@ -61,8 +69,8 @@ data = [
     ["Document Search Assistant", 7, 5, 7, 4, 95000],
 ]
 
-df = pd.DataFrame(
-    data,
+demo_df = pd.DataFrame(
+    demo_data,
     columns=[
         "Use Case",
         "Business Value",
@@ -73,12 +81,15 @@ df = pd.DataFrame(
     ]
 )
 
-df["Priority Score"] = (
-    df["Business Value"] * 0.35
-    + df["AI Readiness"] * 0.30
-    + (10 - df["Implementation Difficulty"]) * 0.20
-    + (10 - df["Risk Level"]) * 0.15
-).round(2)
+# ---------- HELPERS ----------
+def calculate_priority_score(df):
+    df["Priority Score"] = (
+        df["Business Value"] * 0.35
+        + df["AI Readiness"] * 0.30
+        + (10 - df["Implementation Difficulty"]) * 0.20
+        + (10 - df["Risk Level"]) * 0.15
+    ).round(2)
+    return df
 
 def classify_phase(score):
     if score >= 7.5:
@@ -87,11 +98,72 @@ def classify_phase(score):
         return "Phase 2 - Scale"
     return "Phase 3 - Strategic Bet"
 
-df["Roadmap Phase"] = df["Priority Score"].apply(classify_phase)
+def prepare_dataframe(df):
+    df = calculate_priority_score(df)
+    df["Roadmap Phase"] = df["Priority Score"].apply(classify_phase)
+    return df
 
+def load_uploaded_csv(uploaded_file):
+    df = pd.read_csv(uploaded_file)
+
+    expected_columns = [
+        "Use Case",
+        "Business Value",
+        "Implementation Difficulty",
+        "AI Readiness",
+        "Risk Level",
+        "Estimated Annual Value"
+    ]
+
+    missing = [col for col in expected_columns if col not in df.columns]
+    if missing:
+        st.error(f"Missing required columns: {', '.join(missing)}")
+        st.stop()
+
+    return df[expected_columns].copy()
+
+# ---------- SIDEBAR ----------
+st.sidebar.title("⚙️ Strategy Controls")
+
+data_source = st.sidebar.radio(
+    "Choose data source",
+    ["Demo portfolio", "Upload CSV"]
+)
+
+uploaded_file = None
+if data_source == "Upload CSV":
+    uploaded_file = st.sidebar.file_uploader("Upload AI use cases CSV", type=["csv"])
+    st.sidebar.caption("Required columns: Use Case, Business Value, Implementation Difficulty, AI Readiness, Risk Level, Estimated Annual Value")
+
+industry = st.sidebar.selectbox(
+    "Industry focus",
+    ["General", "E-commerce", "Marketing Agency", "Retail", "Healthcare", "Finance", "SaaS"]
+)
+
+strategy_goal = st.sidebar.selectbox(
+    "Main strategy goal",
+    ["Efficiency", "Revenue Growth", "Customer Experience", "Automation", "Innovation"]
+)
+
+# ---------- LOAD DATA ----------
+if data_source == "Upload CSV" and uploaded_file is not None:
+    df = load_uploaded_csv(uploaded_file)
+    source_label = "Uploaded AI portfolio"
+else:
+    df = demo_df.copy()
+    source_label = "Demo AI portfolio"
+
+df = prepare_dataframe(df)
+
+# ---------- METRICS ----------
+top_priority = df["Priority Score"].max()
+total_value = int(df["Estimated Annual Value"].sum())
+quick_wins = (df["Roadmap Phase"] == "Phase 1 - Quick Win").sum()
+
+# ---------- HEADER ----------
 st.markdown('<div class="main-title">🧠 AI Strategy Hub</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="subtitle">Portfolio project for AI Manager roles • Prioritize AI use cases, assess ROI, risk and implementation readiness</div>',
+    f'<div class="subtitle">Portfolio project for AI Manager roles • Prioritize AI use cases, assess ROI, risk and implementation readiness • Source: {source_label}</div>',
     unsafe_allow_html=True
 )
 
@@ -106,7 +178,6 @@ with k1:
     """, unsafe_allow_html=True)
 
 with k2:
-    top_priority = df["Priority Score"].max()
     st.markdown(f"""
     <div class="metric-card">
         <div class="metric-label">Top Priority Score</div>
@@ -115,7 +186,6 @@ with k2:
     """, unsafe_allow_html=True)
 
 with k3:
-    total_value = int(df["Estimated Annual Value"].sum())
     st.markdown(f"""
     <div class="metric-card">
         <div class="metric-label">Potential Annual Value</div>
@@ -124,7 +194,6 @@ with k3:
     """, unsafe_allow_html=True)
 
 with k4:
-    quick_wins = (df["Roadmap Phase"] == "Phase 1 - Quick Win").sum()
     st.markdown(f"""
     <div class="metric-card">
         <div class="metric-label">Quick Wins</div>
@@ -132,6 +201,7 @@ with k4:
     </div>
     """, unsafe_allow_html=True)
 
+# ---------- MAIN ANALYSIS ----------
 left, right = st.columns([1.2, 1])
 
 with left:
@@ -155,6 +225,7 @@ with right:
     st.pyplot(fig)
     st.markdown('</div>', unsafe_allow_html=True)
 
+# ---------- PHASES AND RISK ----------
 c1, c2 = st.columns(2)
 
 with c1:
@@ -195,6 +266,7 @@ with c2:
     st.pyplot(fig2)
     st.markdown('</div>', unsafe_allow_html=True)
 
+# ---------- EXECUTIVE RECOMMENDATION ----------
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
 st.subheader("Executive Recommendation")
 
@@ -208,16 +280,56 @@ recommendations = [
     "Create a governance model covering data quality, AI risk, adoption and ROI measurement."
 ]
 
+if strategy_goal == "Revenue Growth":
+    recommendations.append("Prioritize AI use cases with the highest revenue upside and strong customer-facing impact.")
+elif strategy_goal == "Efficiency":
+    recommendations.append("Prioritize automation-heavy initiatives that reduce manual workload and shorten process time.")
+elif strategy_goal == "Customer Experience":
+    recommendations.append("Prioritize AI products that improve response speed, personalization and customer satisfaction.")
+elif strategy_goal == "Innovation":
+    recommendations.append("Balance quick wins with 1–2 flagship use cases that position the company as an AI leader.")
+
 for rec in recommendations:
     st.markdown(f'<div class="recommendation-box">{rec}</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
+# ---------- AI ROADMAP GENERATOR ----------
+st.markdown('<div class="section-card">', unsafe_allow_html=True)
+st.subheader("AI Roadmap Generator")
+
+phase1 = df[df["Roadmap Phase"] == "Phase 1 - Quick Win"]["Use Case"].tolist()
+phase2 = df[df["Roadmap Phase"] == "Phase 2 - Scale"]["Use Case"].tolist()
+phase3 = df[df["Roadmap Phase"] == "Phase 3 - Strategic Bet"]["Use Case"].tolist()
+
+st.markdown('<div class="roadmap-box"><strong>Quarter 1–2</strong><br>' + ("<br>".join(phase1) if phase1 else "No initiatives assigned.") + '</div>', unsafe_allow_html=True)
+st.markdown('<div class="roadmap-box"><strong>Quarter 3–4</strong><br>' + ("<br>".join(phase2) if phase2 else "No initiatives assigned.") + '</div>', unsafe_allow_html=True)
+st.markdown('<div class="roadmap-box"><strong>Year 2+</strong><br>' + ("<br>".join(phase3) if phase3 else "No initiatives assigned.") + '</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------- EXECUTIVE SUMMARY ----------
+st.markdown('<div class="section-card">', unsafe_allow_html=True)
+st.subheader("Executive Summary")
+
+summary_lines = [
+    f"The current AI portfolio includes **{len(df)} use cases** with a combined estimated annual value of **${total_value:,}**.",
+    f"The top-priority initiative is **{top_projects.iloc[0]['Use Case']}**, with a priority score of **{top_projects.iloc[0]['Priority Score']}**.",
+    f"There are **{quick_wins} quick wins** that can help build momentum for a wider AI transformation program.",
+    f"The portfolio should balance fast-delivery AI initiatives with more complex long-term strategic bets.",
+    f"For the **{industry}** industry, the recommended strategic emphasis is: **{strategy_goal}**."
+]
+
+for line in summary_lines:
+    st.write(f"• {line}")
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------- AI MANAGER NOTES ----------
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
 st.subheader("AI Manager Notes")
 
 selected_use_case = st.selectbox("Select a use case", df["Use Case"].tolist())
-
 selected_row = df[df["Use Case"] == selected_use_case].iloc[0]
 
 st.write(f"**Business Value:** {selected_row['Business Value']}/10")
