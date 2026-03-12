@@ -320,7 +320,6 @@ for rec in recommendations:
     st.markdown(f'<div class="recommendation-box">{rec}</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
-
 # ---------- MARKETING GENERATOR ----------
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
 st.subheader("AI Marketing Content Generator")
