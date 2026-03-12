@@ -361,4 +361,6 @@ with m2:
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------- FOOTER ----------
-st.caption("Built with Python, Streamlit, Pandas and Matplotlib • Portfolio project for AI / Data / Marketing roles")
+st.caption("Built with Python, Streamlit, Pandas and Matplotlib • Portfolio project for AI / Data / Marketing roles")streamlit
+pandas
+matplotlib
